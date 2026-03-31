@@ -19,6 +19,18 @@ jobs:
           node-version: "22"
           cache: "npm"
 
+      - name: Create data directory
+        run: mkdir -p data
+
+      - name: Restore SQLite database cache
+        id: restore-db
+        uses: actions/cache/restore@v4
+        with:
+          path: data/vacancies.db
+          key: vacancies-db-${{ github.run_id }}
+          restore-keys: |
+            vacancies-db-
+
       - name: Install dependencies
         run: npm install
 
@@ -31,3 +43,10 @@ jobs:
           LOG_LEVEL: info
           HTTP_TIMEOUT_MS: 20000
         run: npm run dev
+
+      - name: Save SQLite database cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: data/vacancies.db
+          key: vacancies-db-${{ github.run_id }}
