@@ -1,54 +1,26 @@
 import { db } from "./database";
 import { Vacancy } from "../models/vacancy";
 
-const insertStmt = db.prepare(`
-  INSERT INTO vacancies (
-    url,
-    title,
-    company,
-    description,
-    published_at,
-    scraped_at,
-    is_relevant,
-    notified_at
-  ) VALUES (
-    @url,
-    @title,
-    @company,
-    @description,
-    @publishedAt,
-    @scrapedAt,
-    @isRelevant,
-    @notifiedAt
-  )
-`);
-
-const existsStmt = db.prepare(`
-  SELECT 1
-  FROM vacancies
-  WHERE url = ?
-  LIMIT 1
-`);
-
-const countStmt = db.prepare(`
-  SELECT COUNT(*) as count
-  FROM vacancies
-`);
-
-const markNotifiedStmt = db.prepare(`
-  UPDATE vacancies
-  SET notified_at = ?
-  WHERE url = ?
-`);
-
 export class VacanciesRepository {
   countAll(): number {
-    const row = countStmt.get() as { count: number };
+    const stmt = db.prepare(`
+      SELECT COUNT(*) as count
+      FROM vacancies
+    `);
+
+    const row = stmt.get() as { count: number };
     return row.count;
   }
 
   existsByUrl(url: string): boolean {
-    const row = existsStmt.get(url);
+    const stmt = db.prepare(`
+      SELECT 1
+      FROM vacancies
+      WHERE url = ?
+      LIMIT 1
+    `);
+
+    const row = stmt.get(url);
     return Boolean(row);
   }
 
@@ -57,7 +29,29 @@ export class VacanciesRepository {
     isRelevant: boolean,
     notifiedAt: string | null = null,
   ): void {
-    insertStmt.run({
+    const stmt = db.prepare(`
+      INSERT INTO vacancies (
+        url,
+        title,
+        company,
+        description,
+        published_at,
+        scraped_at,
+        is_relevant,
+        notified_at
+      ) VALUES (
+        @url,
+        @title,
+        @company,
+        @description,
+        @publishedAt,
+        @scrapedAt,
+        @isRelevant,
+        @notifiedAt
+      )
+    `);
+
+    stmt.run({
       url: vacancy.url,
       title: vacancy.title,
       company: vacancy.company,
@@ -70,6 +64,12 @@ export class VacanciesRepository {
   }
 
   markAsNotified(url: string, notifiedAt: string): void {
-    markNotifiedStmt.run(notifiedAt, url);
+    const stmt = db.prepare(`
+      UPDATE vacancies
+      SET notified_at = ?
+      WHERE url = ?
+    `);
+
+    stmt.run(notifiedAt, url);
   }
 }
