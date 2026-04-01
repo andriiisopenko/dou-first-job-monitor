@@ -47,7 +47,8 @@ export class DouClient {
 
         const titleAnchor = root.find(".title a.vt, .title a").first();
         const title = cleanText(titleAnchor.text());
-        const url = absoluteUrl(titleAnchor.attr("href") ?? "");
+        const href = titleAnchor.attr("href") ?? "";
+        const url = href ? absoluteUrl(href) : "";
 
         const company = cleanText(
           root.find(".company").first().text() ||
@@ -79,6 +80,44 @@ export class DouClient {
       });
 
       return this.deduplicateByUrl(vacancies);
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  async fetchVacancyDetails(url: string): Promise<string> {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), env.httpTimeoutMs);
+
+    try {
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (compatible; DOUFirstJobMonitor/1.0; +https://github.com/)",
+          "Accept-Language": "uk,en;q=0.9",
+        },
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          `Failed to fetch vacancy details: ${response.status} ${response.statusText}`,
+        );
+      }
+
+      const html = await response.text();
+      const $ = cheerio.load(html);
+
+      const details = cleanText(
+        $(".b-typo.vacancy-section, .l-vacancy-section, .vacancy-section")
+          .first()
+          .text() ||
+          $("main").text() ||
+          $("body").text(),
+      );
+
+      return details;
     } finally {
       clearTimeout(timeout);
     }

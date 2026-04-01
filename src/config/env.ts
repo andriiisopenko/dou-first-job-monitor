@@ -22,6 +22,13 @@ function getNumberEnv(name: string, defaultValue: number): number {
   return parsed;
 }
 
+function getBooleanEnv(name: string, defaultValue: boolean): boolean {
+  const raw = process.env[name];
+  if (!raw) return defaultValue;
+
+  return raw.toLowerCase() === "true";
+}
+
 export const env = {
   telegramBotToken: getEnv("TELEGRAM_BOT_TOKEN"),
   telegramChatId: getEnv("TELEGRAM_CHAT_ID"),
@@ -30,4 +37,7 @@ export const env = {
   databasePath: getEnv("DATABASE_PATH", false) || "./data/vacancies.db",
   logLevel: getEnv("LOG_LEVEL", false) || "info",
   httpTimeoutMs: getNumberEnv("HTTP_TIMEOUT_MS", 20000),
+  heartbeatEveryRun: getBooleanEnv("HEARTBEAT_EVERY_RUN", true),
+  summaryEveryRun: getBooleanEnv("SUMMARY_EVERY_RUN", true),
+  debugMode: getBooleanEnv("DEBUG_MODE", false),
 };
